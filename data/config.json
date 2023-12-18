@@ -1,0 +1,45 @@
+{
+    "process": [
+        {
+            "id": 1,
+            "title": "TV_TRX_LOT",
+            "target_sql": "",
+            "source_sql": ""
+        },
+        {
+            "id": 2,
+            "title": "TV_TRX_LOT_NEWT",
+            "target_sql": "",
+            "source_sql": ""
+        },
+        {
+            "id": 3,
+            "title": "TV_LABEL_LOT_A",
+            "target_sql": "",
+            "source_sql": ""
+        },
+        {
+            "id": 4,
+            "title": "TV_TEMATIK_A",
+            "target_sql": "",
+            "source_sql": ""
+        },
+        {
+            "id": 5,
+            "title": "TV_TRX_STRATA",
+            "target_sql": "",
+            "source_sql": ""
+        }
+    ],
+    "engine": [
+        {
+            "database": "GOMPB"
+        },
+        {
+            "database": "NVIS"
+        },
+        {
+            "database": "GOMPR"
+        }
+    ]
+}
