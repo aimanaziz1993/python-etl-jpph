@@ -7,7 +7,7 @@ from multiprocessing import pool
 try:
     import settings
     from utils import util_log
-    from query import insert
+    from query import insert, delete
     # instantiate logger
     log = util_log.logger()
 except ImportError:
@@ -22,9 +22,7 @@ try:
     start_trx = time()
     print('start process at: %s' % start_trx)
 
-    gompb_engine = sqlalchemy.create_engine(
-    f'oracle+oracledb://{settings.GOMPB_DICT["USER"]}:{settings.GOMPB_DICT["PASSWORD"]}@{settings.GOMPB_DICT["HOST"]}:{settings.GOMPB_DICT["PORT"]}/?service_name={settings.GOMPB_DICT["SERVICE_NAME"]}',
-    thick_mode=thick_mode, pool_pre_ping=True)
+    gompb_engine = sqlalchemy.create_engine(settings.CONNECTION_STRING)
     print('gompb engine creation...', gompb_engine)
 
     sql_trx_lot_newt = """SELECT * from tv_trx_lot_newt WHERE CASE_ID IS NULL"""
@@ -78,13 +76,13 @@ try:
         insert_rows = merged_df[merged_df['_merge'] == 'right_only'].drop('_merge', axis=1)
         filtered_df = insert_rows[insert_rows.columns.drop(list(insert_rows.filter(regex='_target')))]
 
-        print("#---------------------------------------------------------")
+        print("#-----------------------------------------------------------------------------")
         print("\n")
         print("Filtered Rows to show only _source suffix")
         print("\n")
         print(len(filtered_df), filtered_df)
         print("\n")
-        print("#---------------------------------------------------------")
+        print("#-----------------------------------------------------------------------------")
 
         # col = list(filtered_df.columns.values)
         # print(len(col), col)
@@ -112,15 +110,57 @@ try:
                 VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10)
                 """
             
+            sql_insert_swap = """
+                INSERT INTO tv_trx_lot_newt (
+                    branch_code,
+                    upi, 
+                    case_id,
+                    case_id_new,
+
+                    val_date, 
+                    feree, 
+                    feree_id,
+                    address,
+                    scheme_code,
+                    scheme_name
+                ) 
+                VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10)
+                """
+            
+            sql_delete_existing = ('delete from tv_trx_lot_newt '
+            'where upi = :upi')
+            
             data_to_insert = filtered_df.values.tolist()
 
             for d in data_to_insert:
                 print(d)
-                insert(log, sql_insert_new, d)
-                status = True
+                pass_test = insert(log, sql_insert_new, d)
+                print(pass_test['status'], pass_test['type'])
 
+                if not pass_test['status']:
+                    if pass_test['type'] == 'database_err':
+
+                        try:
+                            print("Attempt insert by swapping to original column")
+                            insert(log, sql_insert_swap, d)
+                        except:
+                            print("Attempt insert after exception")
+                            insert(log, sql_insert_new, d)
+                            
+                    elif pass_test['type'] == 'integrity_err':
+                        # Often scenario for updating a new case and override existing row
+                        try:
+                            print(f"This row with UPI of {d[0]} already existed. We should delete first and then insert back the new one ;)")
+                            print("Deleting...")
+                            test_deleting = delete(log, sql_delete_existing, d[0])
+                            print("test deleting", test_deleting)
+
+                            pass_test2 = insert(log, sql_insert_new, d)
+
+                        except Exception as e:
+                            print(e)
+                status = True
             # result = insert(log, sql_insert_new, data_to_insert)
-            print(status)
 
     if status:
         end = time()

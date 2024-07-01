@@ -7,6 +7,8 @@
 import arrow
 from random import randint
 from multiprocessing import cpu_count
+from datetime import datetime
+import pytz
 import re
 import uuid
 
@@ -99,6 +101,16 @@ def get_uuid():
 # ---------------------------------------
 # TIME manipulations
 # ---------------------------------------
+def gen_local_datetime():
+
+    # Get the current date and time with timezone
+    now = datetime.now(pytz.timezone('Asia/Kuala_Lumpur')) # pytz.utc
+
+    # Format the date and time with timezone
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S %Z")
+    return current_time
+
+
 def gen_curr_local_date():
     utc = arrow.utcnow()
     local = utc.to('Asia/Kuala_Lumpur')
